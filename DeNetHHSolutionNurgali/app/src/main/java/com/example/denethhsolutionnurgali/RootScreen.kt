@@ -3,11 +3,15 @@ package com.example.denethhsolutionnurgali
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -20,101 +24,62 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import java.util.UUID
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
 
 @Composable
 fun App() {
-    val navController = rememberNavController()
-    val rootScreen by remember {
-        mutableStateOf(Node(left = null, right = null, name = "First", parent = null))
-    }
-    val hashMapForRoot = rememberSaveable {
-        hashMapOf<String, Node>()
-    }
-    hashMapForRoot["first"] = rootScreen
-    NavHost(navController = navController, startDestination = "root/first") {
-        composable("root/{hash}") { backStackEntry ->
-            val screenName = backStackEntry.arguments?.getString("hash")
-            val newRoot = hashMapForRoot[screenName]
-            if (newRoot != null) {
-                RootScreen(navController, newRoot, hashMapForRoot)
-            } else {
-                RootScreen(navController, rootScreen, hashMapForRoot)
-            }
-        }
+    NavHost(navController = rememberNavController(), startDestination = "root") {
+        composable("root") { RootScreen() }
     }
 }
 
 @Composable
-fun RootScreen(navController: NavController, root: Node, hashMapForRoot: HashMap<String, Node>) {
-    Column() {
-        ShowInfoScreen(root, hashMapForRoot)
-        ShowNavigationButton(navController, root, hashMapForRoot)
-    }
-}
+fun RootScreen(viewModel: RootViewModel = hiltViewModel<RootViewModel>()) {
 
-@Composable
-fun LeftAndRightButtonForNavigateToChildOrCreate(
-    navController: NavController,
-    root: Node,
-    hashMapForRoot: HashMap<String, Node>,
-) {
-    Row(
+    val uiState by viewModel.uiState.collectAsState()
+
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(10.dp),
-        verticalAlignment = Alignment.Bottom,
-        horizontalArrangement = Arrangement.Center
+            .padding(16.dp)
     ) {
-        Button(onClick = {
-            if (root.left == null) {
-                val hash = UUID.randomUUID().toString().takeLast(20)
-                root.left = Node(left = null, right = null, name = hash, parent = root)
-                hashMapForRoot[hash] = root.left!!
-                navController.navigate("root/${hash}")
-            } else {
-                navController.navigate("root/${root.left!!.name}")
-            }
-        }) {
-            Text(text = if (root.left != null) "go To Left Child" else "create Left Child Screen")
+        Text(text = "name of screen = ${uiState.nameOfScreen}")
+        Text(text = "is left child exists? = ${uiState.isLeftChildExist}")
+        Text(text = "is right child exists? = ${uiState.isRightChildExist}")
+        Text(text = "is parent exists? = ${uiState.isParentExist}")
+        Text(text = "count of screens = ${uiState.countExistingScreen}")
+        Spacer(modifier = Modifier.weight(1f))
+        Button(onClick = { viewModel.onBackButtonClick() }, Modifier.fillMaxWidth()) {
+            TextButtonBack(isExist = uiState.isParentExist)
         }
-        Button(onClick = {
-            if (root.right == null) {
-                val hash = UUID.randomUUID().toString().takeLast(20)
-                root.right = Node(left = null, right = null, name = hash, parent = root)
-                hashMapForRoot[hash] = root.right!!
-                navController.navigate("root/${hash}")
-            } else {
-                navController.navigate("root/${root.right!!.name}")
+        Row(verticalAlignment = Alignment.Bottom) {
+            Button(onClick = { viewModel.onLeftButtonClick() }, modifier = Modifier.weight(1f)) {
+                TextButton(isExist = uiState.isLeftChildExist, direction = "left")
             }
-        }) {
-            Text(text = if (root.right != null) "go To Right Child" else "create Right Child Screen")
+            Spacer(modifier = Modifier.width(16.dp))
+            Button(onClick = { viewModel.onRightButtonClick() }, modifier = Modifier.weight(1f)) {
+                TextButton(isExist = uiState.isRightChildExist, direction = "right")
+            }
         }
     }
 }
 
 @Composable
-fun ShowNavigationButton(
-    navController: NavController,
-    root: Node,
-    hashMapForRoot: HashMap<String, Node>,
-) {
-    Column() {
-        if (root.parent != null) {
-            val path = root.parent!!.name
-            Button(
-                onClick = { navController.navigate("root/${path}") },
-            ) {
-                Text(text = "go Back Screen")
-            }
-        }
-        LeftAndRightButtonForNavigateToChildOrCreate(navController, root, hashMapForRoot)
+fun TextButton(isExist: Boolean, direction: String) {
+    val name = direction
+    if (isExist) {
+        Text(text = "go to $name")
+    } else {
+        Text(text = "create $name")
     }
 }
 
 @Composable
-fun ShowInfoScreen(root: Node, hashMapForRoot: HashMap<String, Node>) {
-    Column {
-        Text(text = "Name of screen: ${root.name}")
-        Text(text = "Count of existing screen: ${hashMapForRoot.size}")
+fun TextButtonBack(isExist: Boolean) {
+    if (isExist) {
+        Text(text = "go to Back")
+    } else {
+        Text(text = "You are in the root")
     }
 }

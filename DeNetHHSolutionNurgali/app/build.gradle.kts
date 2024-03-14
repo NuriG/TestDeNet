@@ -1,6 +1,8 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    kotlin("kapt")
+    id("com.google.dagger.hilt.android")
 }
 
 android {
@@ -49,6 +51,8 @@ android {
     }
 }
 
+
+
 dependencies {
 
     // navigation library
@@ -57,10 +61,14 @@ dependencies {
     // For save state right in jetpack compose function
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.2")
 
-    // For save result
+    // For save result Room
     implementation("androidx.room:room-runtime:2.6.1")
     annotationProcessor("androidx.room:room-compiler:2.6.1")
 
+    // Dagger Hilt
+    implementation ("com.google.dagger:hilt-android:2.51")
+    kapt("com.google.dagger:hilt-android-compiler:2.44")
+    implementation ("androidx.hilt:hilt-navigation-compose:1.1.0")
 
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
@@ -77,4 +85,9 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+}
+
+kapt {
+    correctErrorTypes = true
 }

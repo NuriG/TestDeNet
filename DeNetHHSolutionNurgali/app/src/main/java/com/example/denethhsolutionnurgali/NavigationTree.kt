@@ -1,8 +1,8 @@
 package com.example.denethhsolutionnurgali
 
-data class Node(
-    var left: Node?,
-    var right: Node?,
+class Node(
+    var left: Node? = null,
+    var right: Node? = null,
     var name: String,
-    var parent: Node?,
+    var parent: Node? = null
 )
