@@ -1,10 +1,17 @@
 package com.example.denethhsolutionnurgali
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import android.content.Context
+import android.util.Log
+import androidx.lifecycle.AndroidViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.io.IOException
+import java.io.ObjectInputStream
+import java.io.ObjectOutputStream
 import java.util.UUID
 import javax.inject.Inject
 
@@ -16,8 +23,13 @@ data class RootScreenUiState(
     val countExistingScreen: Int = 1,
 )
 
+private const val FILENAME = "node_data.dat"
+private const val FILENAMECOUNTSCREEN = "count_existing_screen.dat"
+
 @HiltViewModel
-class RootViewModel @Inject constructor() : ViewModel() {
+class RootViewModel @Inject constructor(
+    @ApplicationContext private val application: Application
+) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(RootScreenUiState())
     val uiState: StateFlow<RootScreenUiState> = _uiState.asStateFlow()
@@ -76,7 +88,70 @@ class RootViewModel @Inject constructor() : ViewModel() {
     private fun hashName(): String = UUID.randomUUID().toString().takeLast(20)
 
     init {
+        loadNodeData()?.let { _currentNode.value = it }
+        loadCountExistingScreen()?.let {
+            _uiState.value = uiState.value.copy(countExistingScreen = it)
+        }
         updateUiState(currentNode = currentNode.value)
     }
 
+    override fun onCleared() {
+        super.onCleared()
+        saveNodeData(currentNode.value)
+        saveCountExistingScreen(_uiState.value.countExistingScreen)
+    }
+
+    private fun saveNodeData(node: Node) {
+        try {
+            val fileOutputStream = application.openFileOutput(FILENAME, Context.MODE_PRIVATE)
+            val objectOutputStream = ObjectOutputStream(fileOutputStream)
+            objectOutputStream.writeObject(node)
+            objectOutputStream.close()
+            fileOutputStream.close()
+        } catch (e: IOException) {
+            Log.d("LOG_INSIDE_VIEW_MODEL", "Exception saveNodeData: $e")
+            e.printStackTrace()
+        }
+    }
+
+    private fun saveCountExistingScreen(countExistingScreen: Int) {
+        try {
+            val fileOutputStream = application.openFileOutput(FILENAMECOUNTSCREEN, Context.MODE_PRIVATE)
+            val objectOutputStream = ObjectOutputStream(fileOutputStream)
+            objectOutputStream.writeObject(countExistingScreen)
+            objectOutputStream.close()
+            fileOutputStream.close()
+        } catch (e: IOException) {
+            Log.d("LOG_INSIDE_VIEW_MODEL", "Exception saveNodeData: $e")
+            e.printStackTrace()
+        }
+    }
+
+    private fun loadCountExistingScreen(): Int? {
+        return try {
+            ObjectInputStream(application.openFileInput(FILENAMECOUNTSCREEN)).use { inp ->
+                inp.readObject() as? Int
+            }
+        } catch (e: IOException) {
+            e.printStackTrace()
+            null
+        } catch (e: ClassNotFoundException) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    private fun loadNodeData(): Node? {
+        return try {
+            ObjectInputStream(application.openFileInput(FILENAME)).use { inp ->
+                inp.readObject() as? Node
+            }
+        } catch (e: IOException) {
+            e.printStackTrace()
+            null
+        } catch (e: ClassNotFoundException) {
+            e.printStackTrace()
+            null
+        }
+    }
 }
